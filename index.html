@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Gambar rangkaian DC atau AC, hitung nilai komponen, dan ikuti langkah perhitungannya.">
+  <title>Rangkai Lab · Simulator DC dan AC</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2390f0d4'/%3E%3Cpath d='M4 16h6l3-6 6 12 3-6h6' fill='none' stroke='%23101b25' stroke-width='2.5' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./vendor/katex/katex.min.js" defer></script>
+  <script src="./solver.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="top"><div class="brand"><span class="mark" aria-hidden="true">⌁</span> Rangkai<span>Lab</span></div><nav aria-label="Alat bantu"><a href="#latex">LaTeX</a><a href="#ohm">Kalkulator Ohm <span aria-hidden="true">↗</span></a></nav></header>
+  <main>
+    <div class="intro">
+      <div><span class="tag"><i></i> Laboratorium rangkaian DC dan AC</span><h1>Gambar. Hitung. Pahami.</h1><p>Rakit skema, cari nilai yang belum diketahui, dan telusuri rumusnya.</p></div>
+      <label class="examples">Mulai dari contoh<select id="example"><option value="series">Seri · pembagi tegangan</option><option value="unknown">Soal DC · cari nilai R2</option><option value="multi">Soal DC · cari R1 dan R2</option><option value="parallel">Paralel · pembagi arus</option><option value="current">Sumber arus · Hukum Ohm</option><option value="rlc">AC · seri RLC</option><option value="blank">Kanvas kosong</option></select></label>
+    </div>
+    <div class="workspace">
+      <section class="editor" aria-labelledby="editor-title">
+        <div class="bar"><div><h2 id="editor-title">Meja rangkai</h2><small id="count"></small></div><div class="actions"><button id="undo" title="Urungkan (Ctrl+Z)">↶ <span>Urungkan</span></button><button id="clear">Bersihkan</button></div></div>
+        <div id="tools" class="tools" role="group" aria-label="Alat gambar"></div>
+        <div class="board">
+          <svg id="diagram" viewBox="0 0 768 432" tabindex="0" aria-label="Kanvas rangkaian. Gunakan tombol panah untuk berpindah titik, Enter untuk memilih, dan Escape untuk membatalkan.">
+            <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle r="1.25" fill="#375064"/></pattern></defs>
+            <rect width="768" height="432" fill="url(#grid)"/><g id="drawing"></g>
+          </svg>
+          <span id="board-label" class="board-label">DC / SKEMA</span>
+        </div>
+        <p id="hint" class="hint" role="status"></p>
+        <p class="reading-guide">Label skema menampilkan nilai komponen, tegangan, dan arus. Untuk AC, label menampilkan magnitudo RMS.</p>
+        <div id="probe-strip" class="probe-strip" hidden><span id="probe-status"></span><button type="button" id="clear-probes">Hapus titik ukur</button></div>
+      </section>
+      <aside class="results" aria-labelledby="results-title">
+        <div class="result-head"><div><span class="tag"><i></i> <span id="analysis-status">Simulasi otomatis</span></span><h2 id="results-title">Hasil &amp; rumus</h2></div><button id="run" class="primary">▶ Hitung</button></div>
+        <div class="settings">
+          <label>Mode<select id="mode"><option value="dc">DC tunak</option><option value="ac">AC fasor</option></select></label>
+          <label id="frequency-row" hidden>Frekuensi (Hz)<input id="frequency" type="number" step="any" min="0.001" max="1000000000" value="1000"></label>
+        </div>
+        <form id="edit" hidden>
+          <label class="check"><input id="unknown" type="checkbox"> Cari nilai komponen ini (mode soal)</label>
+          <label for="value" id="edit-label"></label><div class="form-row"><input id="value" type="number" step="any"><button type="submit">Terapkan</button></div>
+          <label id="phase-row" hidden>Fase sumber (°)<input id="phase" type="number" step="any" value="0"></label>
+          <button id="unknown-save" type="submit" hidden>Tandai sebagai ?</button>
+        </form>
+        <div id="simulation-return" class="simulation-return" hidden>
+          <p>Mode soal aktif untuk komponen bertanda ?. Untuk langsung melihat tegangan dan arus, gunakan nilai komponen yang tersimpan.</p>
+          <button type="button" id="use-simulation-values">Pakai nilai simulasi</button>
+        </div>
+        <label id="target-row" class="target-row" hidden>Hitung komponen mana dulu?<select id="solve-target"></select></label>
+        <fieldset id="observation" hidden>
+          <legend id="observation-title">Data dari soal</legend>
+          <p>Masukkan data yang membantu mencari komponen ini. Data ukur disimpan terpisah untuk tiap komponen bertanda ?.</p>
+          <ul id="saved-measurements" class="measurements" aria-label="Data ukur tersimpan"></ul>
+          <div class="fields"><label>Lokasi ukur<select id="observed-part"></select></label>
+            <label id="quantity-row">Besaran<select id="quantity"><option value="v">Tegangan (V)</option><option value="i">Arus (A)</option></select></label>
+            <label id="measurement-label">Nilai A ke B<input id="measurement" type="number" step="any" placeholder="mis. 2"></label>
+            <label id="measurement-phase-row" hidden>Fase (°)<input id="measurement-phase" type="number" step="any" value="0"></label>
+          </div>
+          <button type="button" id="add-measurement">+ Tambah data ukur</button>
+          <p id="measurement-status" role="status"></p>
+        </fieldset>
+        <div id="result" aria-live="polite"></div>
+        <details id="sweep" hidden>
+          <summary>Eksportir sweep AC</summary>
+          <form id="sweep-form">
+            <p>Hitung respons pada frekuensi berjarak logaritmik dan unduh fasornya sebagai CSV.</p>
+            <div class="fields"><label>Awal (Hz)<input id="sweep-start" type="number" step="any" min="0.001" max="1000000000" value="10" required></label>
+              <label>Akhir (Hz)<input id="sweep-end" type="number" step="any" min="0.001" max="1000000000" value="100000" required></label>
+              <label>Jumlah titik<input id="sweep-points" type="number" min="2" max="301" value="81" required></label>
+            </div>
+            <button type="submit">Unduh CSV</button><output id="sweep-result" aria-live="polite"></output>
+          </form>
+        </details>
+      </aside>
+    </div>
+    <section id="ohm" class="ohm"><div><span class="tag"><i></i> Hitung cepat</span><h2>Kalkulator Hukum Ohm</h2><p>Isi dua besaran. Kosongkan kolom yang ingin kamu cari.</p></div>
+      <form id="ohm-form"><div class="ohm-inputs"><label>Tegangan (V)<input id="ohm-v" type="number" step="any" placeholder="mis. 2"></label><label>Arus (A)<input id="ohm-i" type="number" step="any" placeholder="mis. 0,01"></label><label>Hambatan (Ω)<input id="ohm-r" type="number" step="any" placeholder="mis. 200"></label><button class="primary" type="submit">Cari nilai</button></div><output id="ohm-result" aria-live="polite"></output></form>
+    </section>
+    <section id="latex" class="ohm latex"><div><span class="tag"><i></i> Pratinjau rumus</span><h2>LaTeX langsung tampil</h2><p>Tempel satu persamaan dengan atau tanpa pembatas LaTeX. Hasil berubah saat kamu mengetik.</p></div>
+      <div><label for="latex-input">Masukkan LaTeX</label><textarea id="latex-input" rows="3" maxlength="4000" spellcheck="false">R_{\mathrm{eq}}=\frac{V_{AB}}{I}=\frac{2\,\mathrm{V}}{0{,}02\,\mathrm{A}}=100\,\Omega</textarea>
+        <div id="latex-preview" class="formula" aria-label="Pratinjau LaTeX"></div><p id="latex-status" role="status"></p></div>
+    </section>
+  </main>
+  <footer>Rangkai Lab <span>·</span> Model linier ideal untuk DC tunak dan AC sinusoidal</footer>
+</body>
+</html>
