@@ -1,5 +1,7 @@
 # Rangkai Lab
 
+[Buka Rangkai Lab di browser](https://resberg.github.io/rangkai-lab/)
+
 Rangkai Lab adalah simulator DC dan AC berbahasa Indonesia. Gambar skema di kanvas, cari nilai komponen dari data soal, lalu lihat langkah perhitungannya.
 
 ## Coba di komputer
